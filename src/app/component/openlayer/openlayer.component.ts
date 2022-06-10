@@ -1,9 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import 'ol/ol.css';
-import Map from 'ol/Map';
-import view from 'ol/View';
-import Tile from 'ol/layer/Tile';
+import { Map, View } from 'ol';
+import { Tile as TileLayer } from 'ol/layer';
 import { OSM } from 'ol/source';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Draw from "ol/interaction/Draw";
+import { useGeographic } from 'ol/proj';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+
+useGeographic();
 
 @Component({
   selector: 'app-openlayer',
@@ -12,27 +19,62 @@ import { OSM } from 'ol/source';
 })
 
 export class OpenlayerComponent implements OnInit {
+  map: Map | any;
+  draw: any;
 
-  map: any;
+  lineType: string = 'LineString';
+  raster = new TileLayer({
+    source: new OSM(),
+  });
+
+  source = new VectorSource({ wrapX: false });
+
+  vector = new VectorLayer({
+    source: this.source,
+  });
+
+  centroid = [78.9629, 20.5937];
+
   constructor() { }
 
   ngOnInit(): void {
-    this.initializmap();
-  }
+    const place = [78.9629, 20.5937];
 
-  initializmap() {
+    const point = new Point(place);
 
-    this.map = new Map({
-      target: 'map',
+    const map = new Map({
+      target:   'map',
+      view: new View({
+        center: place,
+        zoom: 4,
+      }),
       layers: [
-        new Tile({
-          source: new OSM()
+        new TileLayer({
+          source: new OSM(),
+        }),
+        new VectorLayer({
+          source: new VectorSource({
+            features: [new Feature(Point)],
+          }),
         })
       ],
-      view: new view({
-        center: [18.742748946039903, 73.31415759221169],
-        zoom: 4
-      }),
     });
   }
+  addInteraction() {
+  const value = this.lineType;
+    if (value !== 'None') {
+      this.draw = new Draw({
+        type: value,
+        source: this.source
+      });
+      this.map.addInteraction(this.draw);
+  
+    }
+  }
+
+  onTypeChange() {
+    this.map.removeInteraction(this.draw);
+    this.addInteraction();
+  }
+
 }
