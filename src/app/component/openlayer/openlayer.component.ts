@@ -1,15 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import 'ol/ol.css';
-import { Map, View } from 'ol';
+import Map from 'ol/Map';
+import {View} from 'ol';
 import { Tile as TileLayer } from 'ol/layer';
 import { OSM } from 'ol/source';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Draw from "ol/interaction/Draw";
-import { useGeographic } from 'ol/proj';
+import { transform, useGeographic } from 'ol/proj';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
+import fill from 'ol/style/Fill';
+import icon from 'ol/style/Icon';
+import style from 'ol/style/Style';
+import stroke from 'ol/style/Stroke';
+import text from 'ol/style/Text';
+import Polyline from 'ol/format/Polyline';
 
+import line from 'ol/geom/LineString';
 useGeographic();
 
 @Component({
@@ -19,62 +27,53 @@ useGeographic();
 })
 
 export class OpenlayerComponent implements OnInit {
-  map: Map | any;
-  draw: any;
-
-  lineType: string = 'LineString';
-  raster = new TileLayer({
-    source: new OSM(),
-  });
-
-  source = new VectorSource({ wrapX: false });
-
-  vector = new VectorLayer({
-    source: this.source,
-  });
-
-  centroid = [78.9629, 20.5937];
+ 
 
   constructor() { }
 
   ngOnInit(): void {
     const place = [78.9629, 20.5937];
-
-    const point = new Point(place);
-
-    const map = new Map({
-      target:   'map',
-      view: new View({
-        center: place,
-        zoom: 4,
-      }),
+    
+    var map = new Map({
+      target: 'map',
       layers: [
         new TileLayer({
-          source: new OSM(),
-        }),
-        new VectorLayer({
-          source: new VectorSource({
-            features: [new Feature(Point)],
-          }),
+          source: new OSM()
         })
       ],
+      view: new View({
+        center: place,
+        zoom: 6
+      })
     });
-  }
-  addInteraction() {
-  const value = this.lineType;
-    if (value !== 'None') {
-      this.draw = new Draw({
-        type: value,
-        source: this.source
-      });
-      this.map.addInteraction(this.draw);
-  
+    var points = [[73.0289,19.0307], [ 73.2685,18.8330],[ 73.4642,18.7604,],[76.2395,17.8713]];
+    const routeFeature = new Feature({
+      type: 'route',
+      geometry: new line(points),
+    });
+
+    for (var i = 0; i < points.length; i++) {
+      points[i] = transform(points[i], 'EPSG:4326', 'EPSG:4326');
     }
-  }
 
-  onTypeChange() {
-    this.map.removeInteraction(this.draw);
-    this.addInteraction();
-  }
+    var featureLine = new Feature({
+      geometry: new line(points)
+    });
 
+    var vectorLine = new VectorSource({});
+    vectorLine.addFeature(featureLine);
+  
+    var vectorLineLayer = new VectorLayer({
+      source: vectorLine,
+    style: new style({
+        fill: new fill({ color: 'red' }),
+        stroke: new stroke({ color: 'black', width: 4 })
+    })
+    });
+    map.addLayer(vectorLineLayer);
+
+  }
+  
 }
+
+
